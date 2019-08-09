@@ -27,6 +27,30 @@
 
 #include "deClock.h"
 
+#ifdef __QNXNTO__
+#include <sys/neutrino.h>
+#include <sys/trace.h>
+
+static bool _test_capture = false;
+static std::string _test_case = "dEQP-VK.pipeline.blend.format.r16g16b16_sfloat.states.color_1mda_1msc_rsub_alpha_sa_1mda_min-color_sa_1mcc_rsub_alpha_1msa_1mdc_max-color_ca_1mcc_max_alpha_1mca_1mcc_sub-color_dc_dc_max_alpha_da_sc_max";
+//static std::string _test_case = "dEQP-VK.api.smoke.create_sampler";
+
+#define trace_start(casename)						\
+	if (casename == _test_case) {					\
+		_test_capture = true;						\
+		TraceEvent(_NTO_TRACE_START);				\
+	}
+#define trace_end()								\
+	if (_test_capture) {							\
+		TraceEvent(_NTO_TRACE_STOP);				\
+	}
+#define tracepoint(id, str)  trace_logf(_NTO_TRACE_USERFIRST + id, str)
+#else
+#define trace_start(casename)
+#define trace_end()
+#define tracepoint(id, str)  (void)str
+#endif
+
 namespace tcu
 {
 
@@ -158,12 +182,15 @@ void TestSessionExecutor::enterTestPackage (TestPackage* testPackage)
 	// Create test case wrapper
 	DE_ASSERT(!m_caseExecutor);
 	m_caseExecutor = de::MovePtr<TestCaseExecutor>(testPackage->createExecutor());
+	tracepoint(10, "TestPackage enter");
 	m_packageStartTime	= deGetMicroseconds();
 }
 
 void TestSessionExecutor::leaveTestPackage (TestPackage* testPackage)
 {
 	DE_UNREF(testPackage);
+	tracepoint(10, "TestPackage leave");
+
 	m_caseExecutor.clear();
 	m_testCtx.getLog().startTestsCasesTime();
 
@@ -196,6 +223,11 @@ bool TestSessionExecutor::enterTestCase (TestCase* testCase, const std::string& 
 	bool					initOk		= false;
 
 	print("\nTest case '%s'..\n", casePath.c_str());
+
+	trace_start(casePath);
+
+	tracepoint(11, casePath.c_str());
+	tracepoint(12, "TestCase enter");
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_LAST, "");
 	m_testCtx.setTerminateAfter(false);
@@ -250,6 +282,8 @@ void TestSessionExecutor::leaveTestCase (TestCase* testCase)
 		m_testCtx.setTerminateAfter(true);
 	}
 
+	tracepoint(12, "TestCase leave");
+
 	{
 		const deInt64 duration = deGetMicroseconds()-m_testStartTime;
 		m_testStartTime = 0;
@@ -285,6 +319,8 @@ void TestSessionExecutor::leaveTestCase (TestCase* testCase)
 
 	if (m_testCtx.getWatchDog())
 		qpWatchDog_reset(m_testCtx.getWatchDog());
+
+	trace_end();
 }
 
 TestCase::IterateResult TestSessionExecutor::iterateTestCase (TestCase* testCase)

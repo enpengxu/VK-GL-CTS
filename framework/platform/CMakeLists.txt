@@ -136,6 +136,19 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 			osx/tcuOSXMetalView.hpp
 			)
 
+	elseif (DE_OS_IS_QNX)
+		set(TCUTIL_PLATFORM_SRCS
+			lnx/tcuLnx.cpp
+			lnx/tcuLnx.cpp
+			lnx/tcuLnxPlatform.cpp
+			lnx/tcuLnxPlatform.hpp
+			lnx/tcuLnxEglPlatform.hpp
+			lnx/tcuLnxEglPlatform.cpp
+			lnx/tcuLnxVulkanPlatform.hpp
+			lnx/tcuLnxVulkanPlatform.cpp
+		)
+		include_directories(lnx)
+
 	else ()
 		set(TCUTIL_PLATFORM_SRCS
 			vanilla/tcuVanillaPlatform.cpp
